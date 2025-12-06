@@ -1,0 +1,127 @@
+
+<main class="min-h-screen w-full flex flex-col items-center p-4 sm:p-8 bg-slate-900">
+  <header class="text-center mb-8">
+    <h1 class="text-4xl sm:text-5xl font-bold text-sky-300">Defense-in-Depth</h1>
+    <p class="text-slate-400 mt-2 max-w-2xl">
+      An interactive guide to the layered security strategy. Click on a layer to learn more.
+    </p>
+  </header>
+
+  <div class="w-full max-w-7xl flex flex-col lg:flex-row gap-8">
+    <!-- Interactive Diagram -->
+    <div class="lg:w-1/2 flex items-center justify-center p-4 min-h-[300px] lg:min-h-0">
+      <svg viewBox="0 0 600 600" class="w-full max-w-lg">
+        <defs>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="coloredBlur"></feGaussianBlur>
+            <feMerge>
+              <feMergeNode in="coloredBlur"></feMergeNode>
+              <feMergeNode in="SourceGraphic"></feMergeNode>
+            </feMerge>
+          </filter>
+        </defs>
+        @for (layer of layers().slice().reverse(); track layer.id) {
+          @let isSelected = selectedLayer()?.id === layer.id;
+          <g 
+            [attr.data-layer-id]="layer.id" 
+            (click)="selectLayer(getLayerById(layer.id))" 
+            class="cursor-pointer transition-all duration-300" 
+            [class.opacity-50]="selectedLayer() && !isSelected"
+            [class.hover:opacity-100]="selectedLayer() && !isSelected"
+            >
+            <circle
+              cx="300" cy="300"
+              [attr.r]="layer.radius"
+              [attr.fill]="layer.color"
+              fill-opacity="0.1"
+              stroke-width="2"
+              [attr.stroke]="layer.color"
+              class="transition-all duration-300"
+              [style.filter]="isSelected ? 'url(#glow)' : 'none'">
+            </circle>
+            <text 
+              [attr.x]="300" 
+              [attr.y]="300 - layer.radius + 20" 
+              text-anchor="middle"
+              class="font-semibold text-sm sm:text-base pointer-events-none transition-all duration-300"
+              [attr.fill]="isSelected ? '#67e8f9' : layer.color">
+              {{ layer.name }}
+            </text>
+          </g>
+        }
+      </svg>
+    </div>
+
+    <!-- Details Panel -->
+    <div class="lg:w-1/2 bg-slate-800/50 rounded-lg p-6 sm:p-8 border border-slate-700 min-h-[400px]">
+      @if (selectedLayer(); as layer) {
+        <div class="flex flex-col h-full animate-fade-in">
+          <h2 class="text-3xl font-bold mb-1" [style.color]="layer.color">{{ layer.name }}</h2>
+          <p class="text-slate-400 mb-4">{{ layer.description }}</p>
+
+          <h3 class="font-semibold text-lg text-slate-300 mb-2">Key Considerations:</h3>
+          <ul class="list-disc list-inside text-slate-400 space-y-1 mb-6">
+            @for (detail of layer.details; track detail) {
+              <li>{{ detail }}</li>
+            }
+          </ul>
+
+          <div class="mt-auto pt-6 border-t border-slate-700">
+            <h3 class="font-semibold text-lg text-slate-300 mb-3">AI-Powered Insights</h3>
+            <button
+              (click)="handleGenerateChecklist()"
+              [disabled]="isLoading()"
+              class="w-full sm:w-auto bg-sky-500 hover:bg-sky-400 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-md transition-colors duration-300 flex items-center justify-center gap-2">
+              @if (isLoading()) {
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Generating...</span>
+              } @else {
+                <span>Generate Security Checklist</span>
+              }
+            </button>
+
+            @if (error(); as errorMessage) {
+              <div class="mt-4 p-3 bg-red-900/50 border border-red-700 rounded-md text-red-300">
+                <p><span class="font-bold">Error:</span> {{ errorMessage }}</p>
+              </div>
+            }
+
+            @if (generatedChecklist(); as checklist) {
+              <div class="mt-4 space-y-2 animate-fade-in">
+                 <h4 class="font-semibold text-md text-slate-300">Generated Checklist:</h4>
+                 <ul class="bg-slate-900/50 p-4 rounded-md border border-slate-700 space-y-2">
+                    @for (item of checklist; track item; let i = $index) {
+                      <li class="flex items-start">
+                        <svg class="w-5 h-5 mr-2 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="text-slate-300">{{ item }}</span>
+                      </li>
+                    }
+                 </ul>
+              </div>
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="flex flex-col items-center justify-center h-full text-center text-slate-500">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          <p class="text-xl font-semibold">Select a layer from the diagram</p>
+          <p>Learn about its role in protecting your data.</p>
+        </div>
+      }
+    </div>
+  </div>
+  <style>
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</main>
